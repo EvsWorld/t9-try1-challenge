@@ -14,6 +14,8 @@ import 'simple-line-icons/css/simple-line-icons.css';
 // Import Main styles for this application
 import './scss/style.css'
 
+import T9Form from './views/T9Form';
+
 // Containers
 import { DefaultLayout } from './containers';
 // Pages
@@ -22,7 +24,9 @@ import { DefaultLayout } from './containers';
 class App extends Component {
   render() {
     return (
-      <DefaultLayout className="App"/>
+    <div>
+      <T9Form />
+    </div>
     );
   }
 }

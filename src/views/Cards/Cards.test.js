@@ -7,3 +7,10 @@ it('renders without crashing', () => {
   ReactDOM.render(<Cards />, div);
   ReactDOM.unmountComponentAtNode(div);
 });
+
+describe('Cards component', () => {
+  test('render', () => {
+    const { wrapper } = setup()
+    expect(wrapper).toMatchSnapshot()
+  })
+});

@@ -1,0 +1,11 @@
+.prev-text, .current-text, .cursor {
+  border: 1px solid red;
+  margin: .4em;
+  padding: .3em;
+}
+
+.poorman-textbox {
+  border: 1px solid black;
+  padding: .7em;
+  margin: 1em;
+}
