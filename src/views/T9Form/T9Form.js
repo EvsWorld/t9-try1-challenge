@@ -29,16 +29,17 @@ class T9Form extends React.Component {
     currentPredictionsIndex: 0
   }
 
-  _handleChange = (val, input) => {
-    return this.setState(
+  _handleChange = (val) => {
+    console.log(`hit _handleChange with param val = ${val}.`);
+    this.setState(
       { input: val }, () =>
-    console.log(`hit _handleChange with param val = ${val}. this.state.input = ${input}`)
+    console.log(`this.state.input (after _handleChange setState()) = ${this.state.input}`)
     )
   };
-  _handleCurDigits = (input) => {
+  _handleCurDigits = val => {
     console.log(`hit _handleCurDigits !!`);
     this.setState( prevState => {
-      currentDigits: prevState.currentDigits + input
+      return {currentDigits: prevState.currentDigits + val}
     },
     () => console.log(`this.state after setState currentDigits = `, this.state)
     )
@@ -61,12 +62,14 @@ class T9Form extends React.Component {
       }, prevState );
     }
 
-    if (e.nativeEvent.keyCode === 32) {
+    // TODO: make spacebar routine run
+    // if (e.nativeEvent.keyCode === 32) {
+    if (e.keyCode === 32) {
       // const updatePrevText = R.over({ prevText: `${prevText} ${currentText} ` })
-      console.log('hit the spacebar!!');
+      console.log('\n\n\nhit the spacebar!!');
       console.log(`this.state = `, this.state);
-      this.setState( prevState => (
-        {
+      this.setState( prevState => {
+        return {
           input: '',
           currentDigits: '',
           prevText: prevState.currentText,
@@ -75,31 +78,36 @@ class T9Form extends React.Component {
           currentPredictions: [],
           currentPredictionsIndex: 0
         }
-      ));
+      }, () => console.log(`this.state after spacebar = `, this.state)
+      );
     }
     // Don't do anything if number isn't input
     if(isNaN(parseInt(value))) return;
 
     // const updateCurrentDigits = R.evolve({ currentDigits : ()=> currentDigits + input })
-    console.log( `value = `, value);
-    await this._handleChange(value, input);
-    await this._handleCurDigits(input)
+    console.log( `value (before calling _handleChange) = `, value);
+    await this._handleChange([...value].pop());
+    await this._handleCurDigits([...value].pop())
 
-   console.log('currentDigits = ', currentDigits );
-    if (currentDigits.length > 0) {
-      const curPredicts = await this._callPredict(currentDigits)
-     this.setState({
+  // call t9 algorith to predict word
+   console.log('currentDigits = ', this.state.currentDigits );
+   console.log(`typeof currentDigits = `, typeof this.state.currentDigits);
+    if (this.state.currentDigits.length > 0) {
+      const curPredicts = await this._callPredict(this.state.currentDigits)
+      console.log('curPredicts = ', curPredicts);
+      this.setState({
         currentPredictions: curPredicts
-      });
+      }, () => console.log(`this.state.currentPredictions = `, this.state.currentPredictions));
       console.log(`this.state = `, this.state);
     }
-    console.log(`currentPredictions = `, currentPredictions);
+    console.log(`this.state.currentPredictions = `, this.state.currentPredictions);
     // if there are predictions for the digits we've typed, show the first one
 
-    if(currentPredictions && currentPredictions.length > 0) {
+    if(this.state.currentPredictions && this.state.currentPredictions.length > 0) {
       // This is our best guess right now for the word currently being typed (haven't hit space)
-      this.setState(R.evolve({ currentWord: currentPredictions[0] }));
-      console.log(`this.state.currentPredictions = `, this.state.currentPredictions);
+      this.setState({ currentWord: this.state.currentPredictions[0] }, () =>
+      console.log(`this.state.currentWord = `, this.state.currentWord)
+      );
     }
     // else {
     //   // just tack the number typed on the end bc we have to do this again
@@ -114,7 +122,7 @@ class T9Form extends React.Component {
     console.log('callPredict was called!', 'cw = ', cw);
     const fetchURL = `http://localhost:3000/${cw}`;
 
-    fetch(fetchURL, { method: 'get' })
+    return fetch(fetchURL, { method: 'get' })
     .then(res => res.json() )
     .then(wordArray => {
       console.log(`response wordArray = `, wordArray);
@@ -144,7 +152,6 @@ class T9Form extends React.Component {
                   name="input"
                   value={input}
                   onChange={this._update}
-                  onKeyUp={this._update}
                   type="text"
                   id="inputId"
                   placeholder='Input your message in digits, T9 style here...'
