@@ -20,6 +20,7 @@ import {
 
 class T9Form extends React.Component {
   state = {
+    input: '',
     currentDigits: '',
     currentText: '',
     prevText: '',
@@ -28,10 +29,25 @@ class T9Form extends React.Component {
     currentPredictionsIndex: 0
   }
 
+  _handleChange = (val, input) => {
+    return this.setState(
+      { input: val }, () =>
+    console.log(`hit _handleChange with param val = ${val}. this.state.input = ${input}`)
+    )
+  };
+  _handleCurDigits = (input) => {
+    console.log(`hit _handleCurDigits !!`);
+    this.setState( prevState => {
+      currentDigits: prevState.currentDigits + input
+    },
+    () => console.log(`this.state after setState currentDigits = `, this.state)
+    )
+  };
 
-  _handleChange = e => {
-    let { currentDigits, prevText, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
-    const { value } = e.target;
+  _update = async e => {
+    console.log(`hit _update!!!!!`);
+    let { input, currentDigits, prevText, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
+    let { value } = e.target;
 
     /**
     * If no matches, add digit typed to the end of current word
@@ -41,47 +57,56 @@ class T9Form extends React.Component {
       // console.log(`prevState.currentText + value = `, prevState.currentText + value);
       // console.log(`prevState = `, prevState);
       return R.evolve({
-        currentDigits: prevState.currentDigits + value
+        currentDigits: prevState.currentDigits + input
       }, prevState );
     }
 
     if (e.nativeEvent.keyCode === 32) {
       // const updatePrevText = R.over({ prevText: `${prevText} ${currentText} ` })
       console.log('hit the spacebar!!');
-      const updatePrevText = R.over(R.lensProp('prevText'),()=>currentText)
-      this.setState(updatePrevText);
-      currentDigits = '';
-      currentWord = '';
-      currentPredictions = [];
-      currentPredictionsIndex = 0;
-      currentText = '';
-
+      console.log(`this.state = `, this.state);
+      this.setState( prevState => (
+        {
+          input: '',
+          currentDigits: '',
+          prevText: prevState.currentText,
+          currentText: '',
+          currentWord: '',
+          currentPredictions: [],
+          currentPredictionsIndex: 0
+        }
+      ));
     }
     // Don't do anything if number isn't input
     if(isNaN(parseInt(value))) return;
 
-    // const updateCurrentDigits = R.evolve({ currentDigits : ()=> currentDigits + value })
-    this.setState( prevState => {
-      currentDigits: prevState.currentDigits + value
-    } );
-    console.log(`currentPredictions = `, currentPredictions);
+    // const updateCurrentDigits = R.evolve({ currentDigits : ()=> currentDigits + input })
+    console.log( `value = `, value);
+    await this._handleChange(value, input);
+    await this._handleCurDigits(input)
+
+   console.log('currentDigits = ', currentDigits );
     if (currentDigits.length > 0) {
-      currentPredictions =  this._callPredict(currentDigits);
+      const curPredicts = await this._callPredict(currentDigits)
+     this.setState({
+        currentPredictions: curPredicts
+      });
+      console.log(`this.state = `, this.state);
     }
     console.log(`currentPredictions = `, currentPredictions);
     // if there are predictions for the digits we've typed, show the first one
 
-        if(currentPredictions && currentPredictions.length > 0) {
+    if(currentPredictions && currentPredictions.length > 0) {
       // This is our best guess right now for the word currently being typed (haven't hit space)
       this.setState(R.evolve({ currentWord: currentPredictions[0] }));
       console.log(`this.state.currentPredictions = `, this.state.currentPredictions);
     }
-    else {
-      // just tack the number typed on the end bc we have to do this again
-      this.setState(updateCurrentDigits2);
-      console.log(`this.state = `, this.state);
-
-    }
+    // else {
+    //   // just tack the number typed on the end bc we have to do this again
+    //   this.setState(updateCurrentDigits2);
+    //   console.log(`this.state = `, this.state);
+    //
+    // }
 
   }
 
@@ -93,7 +118,8 @@ class T9Form extends React.Component {
     .then(res => res.json() )
     .then(wordArray => {
       console.log(`response wordArray = `, wordArray);
-      this.setState({currentPredictions: wordArray})
+      return wordArray;
+      // this.setState({currentPredictions: wordArray})
     }).catch(err => {
       (err);
     });
@@ -101,8 +127,8 @@ class T9Form extends React.Component {
 
 
   render() {
-    let { prevText, currentDigits, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
-
+    let { input, prevText, currentDigits, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
+    // let textToDisplay = `${prevText} ${currentDigits}`;
     return (
       <div>
         <Col xs="12" sm="6">
@@ -115,16 +141,19 @@ class T9Form extends React.Component {
               <FormGroup>
                 <Label htmlFor="inputId">Type your numbers here...</Label>
                 <Input
-                  value={`${prevText} ${currentDigits}` }
-                  onChange={this._handleChange}
+                  name="input"
+                  value={input}
+                  onChange={this._update}
+                  onKeyUp={this._update}
                   type="text"
                   id="inputId"
                   placeholder='Input your message in digits, T9 style here...'
                 />
 
                 <div className='poorman-textbox' name="" id="" cols="30" rows="10">
-                  <span className="prev-text">{prevText}</span>
-                  <span className="current-text">{currentText}</span>
+                  <span className="prev-text">prevText = {prevText}</span>
+                  <span className="current-text">currentText = {currentText}</span>
+                  <span className="current-digits">currentDigits = {currentDigits}</span>
                   <span className="cursor">|</span>
                 </div>
                 {/* <CardFooter>

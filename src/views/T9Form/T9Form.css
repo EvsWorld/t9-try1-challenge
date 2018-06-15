@@ -1,4 +1,4 @@
-.prev-text, .current-text, .cursor {
+.poorman-textbox > span {
   border: 1px solid red;
   margin: .4em;
   padding: .3em;
