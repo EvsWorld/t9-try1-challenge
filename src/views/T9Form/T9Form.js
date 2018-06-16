@@ -17,6 +17,38 @@ import {
   Button
 } from 'reactstrap';
 
+/**
+ * utility function. stringifies JSON data but not circular references
+ * @param  {object} o object that could have circular references
+ * @return {string}   stringified representation of json without the circular refs
+ */
+const logCircularObject = o => {
+  // Demo: Circular reference
+  // var o = {};
+  // o.o = o;
+
+  // Note: cache should not be re-used by repeated calls to JSON.stringify.
+  var cache = [];
+  let result = JSON.stringify(o, function(key, value) {
+      if (typeof value === 'object' && value !== null) {
+          if (cache.indexOf(value) !== -1) {
+              // Duplicate reference found
+              try {
+                  // If this value does not reference a parent it can be deduped
+                  return JSON.parse(JSON.stringify(value));
+              } catch (error) {
+                  // discard key if value cannot be deduped
+                  return;
+              }
+          }
+          // Store value in our collection
+          cache.push(value);
+      }
+      return value;
+  });
+  cache = null; // Enable garbage collection
+  return result;
+};
 
 class T9Form extends React.Component {
   state = {
@@ -28,28 +60,29 @@ class T9Form extends React.Component {
     currentPredictions: [],
     currentPredictionsIndex: 0
   }
-
   _handleChange = (val) => {
     console.log(`hit _handleChange with param val = ${val}.`);
     this.setState(
-      { input: val }, () =>
+      { input: [...val].pop() }, () =>
     console.log(`this.state.input (after _handleChange setState()) = ${this.state.input}`)
     )
   };
-  _handleCurDigits = val => {
+  _handleCurDigits = () => {
     console.log(`hit _handleCurDigits !!`);
     this.setState( prevState => {
-      return {currentDigits: prevState.currentDigits + val}
+      return {currentDigits: prevState.currentDigits + this.state.input}
     },
     () => console.log(`this.state after setState currentDigits = `, this.state)
     )
   };
-
   _update = async e => {
-    console.log(`hit _update!!!!!`);
+    // e.preventDefault();
+    console.log(`hit _update!!!!! 'Object.keys(e)' = ${Object.keys(e)}`);
+    console.log(`hit _update!!!!! 'e.target.value' = ${logCircularObject(e.target.value)}\n
+    e.nativeEvent = ${logCircularObject(e.nativeEvent)}\n
+    e.nativeEvent.keyCode = ${e.nativeEvent.keyCode} `);
     let { input, currentDigits, prevText, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
     let { value } = e.target;
-
     /**
     * If no matches, add digit typed to the end of current word
     * @type {function}
@@ -63,8 +96,7 @@ class T9Form extends React.Component {
     }
 
     // TODO: make spacebar routine run
-    // if (e.nativeEvent.keyCode === 32) {
-    if (e.keyCode === 32) {
+    if (e.key === '') {
       // const updatePrevText = R.over({ prevText: `${prevText} ${currentText} ` })
       console.log('\n\n\nhit the spacebar!!');
       console.log(`this.state = `, this.state);
@@ -82,12 +114,12 @@ class T9Form extends React.Component {
       );
     }
     // Don't do anything if number isn't input
-    if(isNaN(parseInt(value))) return;
+    if(isNaN(parseInt([...value].pop()))) return;
 
     // const updateCurrentDigits = R.evolve({ currentDigits : ()=> currentDigits + input })
     console.log( `value (before calling _handleChange) = `, value);
-    await this._handleChange([...value].pop());
-    await this._handleCurDigits([...value].pop())
+    await this._handleChange(value);
+    await this._handleCurDigits(value)
 
   // call t9 algorith to predict word
    console.log('currentDigits = ', this.state.currentDigits );
@@ -113,11 +145,8 @@ class T9Form extends React.Component {
     //   // just tack the number typed on the end bc we have to do this again
     //   this.setState(updateCurrentDigits2);
     //   console.log(`this.state = `, this.state);
-    //
     // }
-
   }
-
   _callPredict = cw => {
     console.log('callPredict was called!', 'cw = ', cw);
     const fetchURL = `http://localhost:3000/${cw}`;
@@ -133,10 +162,10 @@ class T9Form extends React.Component {
     });
   }
 
-
   render() {
     let { input, prevText, currentDigits, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
     // let textToDisplay = `${prevText} ${currentDigits}`;
+    let textToDisplay = `${prevText} ${currentWord}`;
     return (
       <div>
         <Col xs="12" sm="6">
@@ -150,8 +179,9 @@ class T9Form extends React.Component {
                 <Label htmlFor="inputId">Type your numbers here...</Label>
                 <Input
                   name="input"
-                  value={input}
+                  value={textToDisplay}
                   onChange={this._update}
+                  // onKeyPress={this._handleKeyPress}
                   type="text"
                   id="inputId"
                   placeholder='Input your message in digits, T9 style here...'
@@ -161,6 +191,7 @@ class T9Form extends React.Component {
                   <span className="prev-text">prevText = {prevText}</span>
                   <span className="current-text">currentText = {currentText}</span>
                   <span className="current-digits">currentDigits = {currentDigits}</span>
+                  <span className="current-word">currentWord = {currentWord}</span>
                   <span className="cursor">|</span>
                 </div>
                 {/* <CardFooter>
