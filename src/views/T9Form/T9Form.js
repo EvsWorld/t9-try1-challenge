@@ -60,6 +60,30 @@ class T9Form extends React.Component {
     currentPredictions: [],
     currentPredictionsIndex: 0
   }
+  _handleKeyDown = e => {
+    console.log(`hit _handleKeyDown!!!!! 'Object.keys(e)' = ${Object.keys(e)}`);
+    console.log(`hit _handleKeyDown!!!!! 'e.key' = ${logCircularObject(e.key)}\n
+    e.nativeEvent = ${logCircularObject(e.nativeEvent)}\n
+    e.nativeEvent.keyCode = ${e.nativeEvent.keyCode} `);
+    if (e.key == ' ') {
+      // const updatePrevText = R.over({ prevText: `${prevText} ${currentText} ` })
+      console.log('\n\n\nhit the spacebar!!');
+      console.log(`this.state = `, this.state);
+      this.setState( prevState => {
+        return {
+          input: '',
+          currentDigits: '',
+          prevText: `${prevState.prevText} ${prevState.currentWord}`,
+          currentText: '',
+          currentWord: '',
+          currentPredictions: [],
+          currentPredictionsIndex: 0
+        }
+      }, () => console.log(`this.state after spacebar = `, this.state)
+      );
+    }
+    this._triggerChange(e);
+  }
   _handleChange = (val) => {
     console.log(`hit _handleChange with param val = ${val}.`);
     this.setState(
@@ -75,51 +99,33 @@ class T9Form extends React.Component {
     () => console.log(`this.state after setState currentDigits = `, this.state)
     )
   };
-  _update = async e => {
+  _triggerChange = async e => {
     // e.preventDefault();
-    console.log(`hit _update!!!!! 'Object.keys(e)' = ${Object.keys(e)}`);
-    console.log(`hit _update!!!!! 'e.target.value' = ${logCircularObject(e.target.value)}\n
-    e.nativeEvent = ${logCircularObject(e.nativeEvent)}\n
-    e.nativeEvent.keyCode = ${e.nativeEvent.keyCode} `);
+    console.log(`hit _triggerChange!!!!! 'Object.keys(e)' = ${Object.keys(e)} \n
+    e.key = ${e.key} `);
     let { input, currentDigits, prevText, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
-    let { value } = e.target;
+    let latestDigit = e.key;
     /**
     * If no matches, add digit typed to the end of current word
     * @type {function}
     */
     const updateCurrentDigits2 = (prevState) => {
-      // console.log(`prevState.currentText + value = `, prevState.currentText + value);
       // console.log(`prevState = `, prevState);
       return R.evolve({
         currentDigits: prevState.currentDigits + input
       }, prevState );
     }
 
-    // TODO: make spacebar routine run
-    if (e.key === '') {
-      // const updatePrevText = R.over({ prevText: `${prevText} ${currentText} ` })
-      console.log('\n\n\nhit the spacebar!!');
-      console.log(`this.state = `, this.state);
-      this.setState( prevState => {
-        return {
-          input: '',
-          currentDigits: '',
-          prevText: prevState.currentText,
-          currentText: '',
-          currentWord: '',
-          currentPredictions: [],
-          currentPredictionsIndex: 0
-        }
-      }, () => console.log(`this.state after spacebar = `, this.state)
-      );
-    }
     // Don't do anything if number isn't input
-    if(isNaN(parseInt([...value].pop()))) return;
-
+    if(isNaN(parseInt(latestDigit))) {
+      console.log(`latestDigit = `, latestDigit);
+      return;
+    }
     // const updateCurrentDigits = R.evolve({ currentDigits : ()=> currentDigits + input })
-    console.log( `value (before calling _handleChange) = `, value);
-    await this._handleChange(value);
-    await this._handleCurDigits(value)
+    console.log( `latestDigit (before calling _handleChange) = `, latestDigit);
+    await this._handleChange(latestDigit);
+    // await this.props.onChange(latestDigit);
+    await this._handleCurDigits(latestDigit)
 
   // call t9 algorith to predict word
    console.log('currentDigits = ', this.state.currentDigits );
@@ -180,8 +186,8 @@ class T9Form extends React.Component {
                 <Input
                   name="input"
                   value={textToDisplay}
-                  onChange={this._update}
-                  // onKeyPress={this._handleKeyPress}
+                  // onChange={this._handleChange}
+                  onKeyDown={this._handleKeyDown}
                   type="text"
                   id="inputId"
                   placeholder='Input your message in digits, T9 style here...'
