@@ -73,7 +73,7 @@ class T9Form extends React.Component {
           currentPredictions: [],
           currentPredictionsIndex: 0
         }
-      }, () => console.log(`this.state after spacebar = `, this.state)
+      }
       );
     }
     // breaks out of _handleKeyDown if the last key pressed was spacebar. or any other non numerical key.
@@ -85,38 +85,30 @@ class T9Form extends React.Component {
     // call t9 algorith to predict word
     if (this.state.currentDigits.length > 0) {
       const curPredicts = await this._callPredict(this.state.currentDigits)
-      console.log('curPredicts = ', curPredicts);
       this.setState({
         currentPredictions: curPredicts
-      }, () => console.log(`this.state.currentPredictions = `, this.state.currentPredictions));
+      });
     }
     // if there are predictions for the digits we've typed, show the first one
     if(this.state.currentPredictions && this.state.currentPredictions.length > 0) {
       // 'this.state.currentPredictions[0]' our best guess right now for the word currently being typed (haven't hit space)
-      this.setState({ currentWord: this.state.currentPredictions[0] }, () =>
-      console.log(`this.state.currentWord = `, this.state.currentWord)
-      );
+      this.setState({ currentWord: this.state.currentPredictions[0] });
     } else {
       // If no matches, concat latest digit typed to the end of current word
      this.setState( prevState => ({
          currentWord: `${prevState.currentWord}${latestDigit}`
-       }), () => console.log(`this.state = `, this.state)
+       })
      );
     }
   }
 
   _handleChange = (val) => {
-    this.setState(
-      { input: val }, () =>
-    console.log(`this.state.input (after _handleChange setState()) = ${this.state.input}`)
-    )
+    this.setState({ input: val });
   };
   _handleCurDigits = (val) => {
     this.setState( prevState => {
       return {currentDigits: prevState.currentDigits + val}
-    },
-    () => console.log(`this.state after setState currentDigits = `, this.state)
-    )
+    });
   };
   /**
    * class method that calls api
