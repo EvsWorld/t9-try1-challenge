@@ -60,7 +60,8 @@ class T9Form extends React.Component {
     currentPredictions: [],
     currentPredictionsIndex: 0
   }
-  _handleKeyDown = e => {
+  _handleKeyDown = async e => {
+    let latestDigit = e.key;
     console.log(`hit _handleKeyDown!!!!! 'Object.keys(e)' = ${Object.keys(e)}`);
     console.log(`hit _handleKeyDown!!!!! 'e.key' = ${logCircularObject(e.key)}\n
     e.nativeEvent = ${logCircularObject(e.nativeEvent)}\n
@@ -82,7 +83,34 @@ class T9Form extends React.Component {
       }, () => console.log(`this.state after spacebar = `, this.state)
       );
     }
-    this._triggerChange(e);
+    if(isNaN(parseInt(latestDigit))) {
+      console.log(`latestDigit = `, latestDigit);
+      return;
+    }
+    console.log( `latestDigit (before calling _handleChange) = `, latestDigit);
+    await this._handleChange(latestDigit);
+    await this._handleCurDigits(latestDigit)
+
+  // call t9 algorith to predict word
+   console.log('currentDigits = ', this.state.currentDigits );
+   console.log(`typeof currentDigits = `, typeof this.state.currentDigits);
+    if (this.state.currentDigits.length > 0) {
+      const curPredicts = await this._callPredict(this.state.currentDigits)
+      console.log('curPredicts = ', curPredicts);
+      this.setState({
+        currentPredictions: curPredicts
+      }, () => console.log(`this.state.currentPredictions = `, this.state.currentPredictions));
+      console.log(`this.state = `, this.state);
+    }
+    console.log(`this.state.currentPredictions = `, this.state.currentPredictions);
+    // if there are predictions for the digits we've typed, show the first onei
+
+    if(this.state.currentPredictions && this.state.currentPredictions.length > 0) {
+      // This is our best guess right now for the word currently being typed (haven't hit space)
+      this.setState({ currentWord: this.state.currentPredictions[0] }, () =>
+      console.log(`this.state.currentWord = `, this.state.currentWord)
+      );
+    }
   }
   _handleChange = (val) => {
     console.log(`hit _handleChange with param val = ${val}.`);
