@@ -62,14 +62,7 @@ class T9Form extends React.Component {
   }
   _handleKeyDown = async e => {
     let latestDigit = e.key;
-    console.log(`hit _handleKeyDown!!!!! 'Object.keys(e)' = ${Object.keys(e)}`);
-    console.log(`hit _handleKeyDown!!!!! 'e.key' = ${logCircularObject(e.key)}\n
-    e.nativeEvent = ${logCircularObject(e.nativeEvent)}\n
-    e.nativeEvent.keyCode = ${e.nativeEvent.keyCode} `);
-    if (e.key == ' ') {
-      // const updatePrevText = R.over({ prevText: `${prevText} ${currentText} ` })
-      console.log('\n\n\nhit the spacebar!!');
-      console.log(`this.state = `, this.state);
+    if (latestDigit == ' ') {
       this.setState( prevState => {
         return {
           input: '',
@@ -83,114 +76,59 @@ class T9Form extends React.Component {
       }, () => console.log(`this.state after spacebar = `, this.state)
       );
     }
-    if(isNaN(parseInt(latestDigit))) {
-      console.log(`latestDigit = `, latestDigit);
-      return;
-    }
-    console.log( `latestDigit (before calling _handleChange) = `, latestDigit);
+    // breaks out of _handleKeyDown if the last key pressed was spacebar. or any other non numerical key.
+    if(isNaN(parseInt(latestDigit))) return;
+
     await this._handleChange(latestDigit);
     await this._handleCurDigits(latestDigit)
 
-  // call t9 algorith to predict word
-   console.log('currentDigits = ', this.state.currentDigits );
-   console.log(`typeof currentDigits = `, typeof this.state.currentDigits);
+    // call t9 algorith to predict word
     if (this.state.currentDigits.length > 0) {
       const curPredicts = await this._callPredict(this.state.currentDigits)
       console.log('curPredicts = ', curPredicts);
       this.setState({
         currentPredictions: curPredicts
       }, () => console.log(`this.state.currentPredictions = `, this.state.currentPredictions));
-      console.log(`this.state = `, this.state);
     }
-    console.log(`this.state.currentPredictions = `, this.state.currentPredictions);
-    // if there are predictions for the digits we've typed, show the first onei
-
+    // if there are predictions for the digits we've typed, show the first one
     if(this.state.currentPredictions && this.state.currentPredictions.length > 0) {
-      // This is our best guess right now for the word currently being typed (haven't hit space)
+      // 'this.state.currentPredictions[0]' our best guess right now for the word currently being typed (haven't hit space)
       this.setState({ currentWord: this.state.currentPredictions[0] }, () =>
       console.log(`this.state.currentWord = `, this.state.currentWord)
       );
+    } else {
+      // If no matches, concat latest digit typed to the end of current word
+     this.setState( prevState => ({
+         currentWord: `${prevState.currentWord}${latestDigit}`
+       }), () => console.log(`this.state = `, this.state)
+     );
     }
   }
+
   _handleChange = (val) => {
-    console.log(`hit _handleChange with param val = ${val}.`);
     this.setState(
-      { input: [...val].pop() }, () =>
+      { input: val }, () =>
     console.log(`this.state.input (after _handleChange setState()) = ${this.state.input}`)
     )
   };
-  _handleCurDigits = () => {
-    console.log(`hit _handleCurDigits !!`);
+  _handleCurDigits = (val) => {
     this.setState( prevState => {
-      return {currentDigits: prevState.currentDigits + this.state.input}
+      return {currentDigits: prevState.currentDigits + val}
     },
     () => console.log(`this.state after setState currentDigits = `, this.state)
     )
   };
-  _triggerChange = async e => {
-    // e.preventDefault();
-    console.log(`hit _triggerChange!!!!! 'Object.keys(e)' = ${Object.keys(e)} \n
-    e.key = ${e.key} `);
-    let { input, currentDigits, prevText, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
-    let latestDigit = e.key;
-    /**
-    * If no matches, add digit typed to the end of current word
-    * @type {function}
-    */
-    const updateCurrentDigits2 = (prevState) => {
-      // console.log(`prevState = `, prevState);
-      return R.evolve({
-        currentDigits: prevState.currentDigits + input
-      }, prevState );
-    }
-
-    // Don't do anything if number isn't input
-    if(isNaN(parseInt(latestDigit))) {
-      console.log(`latestDigit = `, latestDigit);
-      return;
-    }
-    // const updateCurrentDigits = R.evolve({ currentDigits : ()=> currentDigits + input })
-    console.log( `latestDigit (before calling _handleChange) = `, latestDigit);
-    await this._handleChange(latestDigit);
-    // await this.props.onChange(latestDigit);
-    await this._handleCurDigits(latestDigit)
-
-  // call t9 algorith to predict word
-   console.log('currentDigits = ', this.state.currentDigits );
-   console.log(`typeof currentDigits = `, typeof this.state.currentDigits);
-    if (this.state.currentDigits.length > 0) {
-      const curPredicts = await this._callPredict(this.state.currentDigits)
-      console.log('curPredicts = ', curPredicts);
-      this.setState({
-        currentPredictions: curPredicts
-      }, () => console.log(`this.state.currentPredictions = `, this.state.currentPredictions));
-      console.log(`this.state = `, this.state);
-    }
-    console.log(`this.state.currentPredictions = `, this.state.currentPredictions);
-    // if there are predictions for the digits we've typed, show the first one
-
-    if(this.state.currentPredictions && this.state.currentPredictions.length > 0) {
-      // This is our best guess right now for the word currently being typed (haven't hit space)
-      this.setState({ currentWord: this.state.currentPredictions[0] }, () =>
-      console.log(`this.state.currentWord = `, this.state.currentWord)
-      );
-    }
-    // else {
-    //   // just tack the number typed on the end bc we have to do this again
-    //   this.setState(updateCurrentDigits2);
-    //   console.log(`this.state = `, this.state);
-    // }
-  }
+  /**
+   * class method that calls api
+   * @param  {string} cw string of numbers to be input in algorithm
+   * @return {array}    array of word predictions
+   */
   _callPredict = cw => {
-    console.log('callPredict was called!', 'cw = ', cw);
     const fetchURL = `http://localhost:3000/${cw}`;
-
     return fetch(fetchURL, { method: 'get' })
     .then(res => res.json() )
     .then(wordArray => {
-      console.log(`response wordArray = `, wordArray);
       return wordArray;
-      // this.setState({currentPredictions: wordArray})
     }).catch(err => {
       (err);
     });
@@ -198,7 +136,6 @@ class T9Form extends React.Component {
 
   render() {
     let { input, prevText, currentDigits, currentText, currentWord, currentPredictions, currentPredictionsIndex } = this.state;
-    // let textToDisplay = `${prevText} ${currentDigits}`;
     let textToDisplay = `${prevText} ${currentWord}`;
     return (
       <div>
@@ -214,7 +151,6 @@ class T9Form extends React.Component {
                 <Input
                   name="input"
                   value={textToDisplay}
-                  // onChange={this._handleChange}
                   onKeyDown={this._handleKeyDown}
                   type="text"
                   id="inputId"
